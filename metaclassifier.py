@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys
-from metaclassifier.__main__ import main
+from metaclassifier import __main__
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    __main__.main()
