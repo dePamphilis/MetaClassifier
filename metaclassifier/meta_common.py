@@ -15,7 +15,10 @@ import argparse
 import time
 import csv
 import sys
-from os import path
+from urllib import request
+import tarfile
+from os import path, listdir, remove, mkdir, rename, rmdir
+from datetime import date
 from . import __version__ as version
 
 __author__ = ('Eric Wafula (ewafula@gmail.com)')
@@ -123,8 +126,19 @@ def read_parameters(callingClass:str="main"):
     if(not len(sys.argv) > 1):
         p.print_help()
         sys.exit(0)
-        
-    return p.parse_args()
+
+    output_args = p.parse_args()
+    if(callingClass in ["main","process"]):
+        if path.exists(output_args.DB_DIR):
+            db_files = listdir(output_args.DB_DIR)
+            if any(".fa" in file for file in db_files):
+                return output_args
+        print("No db files found, downloading defaults")
+        output_args.DB_DIR = output_args.DB_DIR+"_defaults"
+        download_db(output_args.DB_DIR)
+
+
+    return output_args
 
 def parse_config_file(configFileName:str, rowLen:int = 3, areFiles:bool = True):
     """Preparse input file check for errors, and return object
@@ -139,7 +153,7 @@ def parse_config_file(configFileName:str, rowLen:int = 3, areFiles:bool = True):
             Bool to decide if we need to check for file validity
 
     Output:
-        fileContents: list
+        fileContents: list of lists
     """
     fileContents = []
 
@@ -161,6 +175,36 @@ def parse_config_file(configFileName:str, rowLen:int = 3, areFiles:bool = True):
             fileContents.append(row)
 
     return fileContents
+
+def download_db(db_path:str, url:str="http://bigdata.bx.psu.edu/MetaClassifier_databases/MetabarcodeDBsV2.tar.gz"):
+    """
+
+    Parameters
+    ----------
+        db_path: str
+            path to db files
+        url: str
+            url of db files
+
+    Returns
+    -------
+        None
+    """
+
+    if not path.exists(db_path):
+        mkdir(db_path)
+    request.urlretrieve(url,"MetabarcodeDBsV2.tar.gz")
+    tar = tarfile.open("./MetabarcodeDBsV2.tar.gz", "r:gz")
+    tar.extractall(db_path)
+    dir_files = listdir(db_path)
+    if len(dir_files) == 1 and path.isdir(db_path+"/"+dir_files[0]):
+        full_path = db_path+"/"+dir_files[0]
+        for db_file in listdir(full_path):
+            rename(full_path+"/"+db_file,db_path+"/"+db_file)
+        rmdir(full_path)
+
+    remove("./MetabarcodeDBsV2.tar.gz")
+
 
 def get_localtime():
     """Get Current Local Time

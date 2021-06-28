@@ -15,6 +15,7 @@ groups" respectively.
 import os
 import sys
 import time
+from datetime import date
 from . import meta_common as utils
 from . import process_reads, classify_reads
 
@@ -23,8 +24,20 @@ from . import process_reads, classify_reads
 # Allow multiple file types for input/output (csv,tsv,json,etc...)
 # Validate input file before running program, check file is valid, and check all files exist
 
-def run_metaclassifier(sample_input, db_dir, config_file, output_dir, frag_type, merge, merger,  
-                    converter, aligner, tax_class, min_proportion, max_markers, threads):
+def run_metaclassifier( 
+    sample_input: str,
+    db_dir: str, 
+    config_file: str, 
+    output_dir: str, 
+    frag_type: str, 
+    merge: bool, 
+    merger: str,
+    converter: str, 
+    aligner: str, 
+    tax_class: str, 
+    min_proportion: str, 
+    max_markers: str, 
+    threads: str):
     """Merges overlapping paired-end (PE) sample FASTQ reads
 
     Parameters
@@ -69,16 +82,16 @@ def run_metaclassifier(sample_input, db_dir, config_file, output_dir, frag_type,
     print(f"===========================================================\n")
     print(f"{utils.get_localtime()} - Starting MetaClassifier...\n")
 
-    if frag_type == "single" and merge == True:
+    if frag_type == "single" and merge:
         raise Exception(f"single-end read frangments cannot be merged!")
 
-    if frag_type == "paired" and merge == False:
+    if frag_type == "paired" and not merge:
         raise Exception(f"Overlapping paired-end read frangments need to be merged!")
 
     if min_proportion >= 0.01:
         raise Exception(f"The minimum taxon read proportion allowed to retain a sample taxon cannot exceed 0.1%!")
 
-    if merge == True:
+    if merge:
         process_reads.merge_pairs(sample_input, output_dir, merger, threads)
         sample_input = f"{output_dir}/sample.tsv"
         process_reads.get_fasta(sample_input, output_dir, converter)
@@ -95,10 +108,12 @@ def main():
     
     args = utils.read_parameters("main")
     if not args.output_dir:
-        OUTPUT_DIR = os.path.splitext(os.path.basename(args.SAMPLE_FILE))[0]
+        OUTPUT_DIR = "meta_output_"+str(date.today())
         os.mkdir(OUTPUT_DIR,  mode=0o775)
     else:
         OUTPUT_DIR = args.output_dir
+        if not os.path.isdir(OUTPUT_DIR):
+            os.mkdir(OUTPUT_DIR,  mode=0o775)
     
     run_metaclassifier(args.SAMPLE_FILE, args.DB_DIR, args.CONFIG_FILE, OUTPUT_DIR, args.frag_type, args.merge, args.pear_merger, 
                     args.seqtk_converter, args.vsearch_aligner, args.tax_class, args.min_proportion, args.max_markers, args.threads)

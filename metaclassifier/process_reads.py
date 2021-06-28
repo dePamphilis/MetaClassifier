@@ -14,6 +14,7 @@ import os
 import sys
 import time
 import subprocess
+from datetime import date
 from . import meta_common as utils 
 
 def merge_pairs(sample_input, output_dir, merger, threads):
@@ -41,9 +42,8 @@ def merge_pairs(sample_input, output_dir, merger, threads):
     # get paired-end sample read file and merge with PEAR
     merge_dir = f"{output_dir}/merge_dir"
     os.mkdir(merge_dir,  mode=0o775)
-    output_file = f"{output_dir}/sample.tsv"
-    for sample in utils.parse_config_file(sample_input):
-        with open(output_file, 'w'):
+    with open(f"{output_dir}/sample.tsv", 'w') as output_file:
+        for sample in utils.parse_config_file(sample_input):
             merged_fastq = f"{merge_dir}/{sample[0]}"
             log_file = f"{merge_dir}/{sample[0]}_pear.log"
             with open(log_file, 'w') as log:
@@ -89,10 +89,12 @@ def main():
         raise Exception(f"Overlapping paired-end read fragments need to be merged!") 
 
     if not args.output_dir:
-        OUTPUT_DIR = os.path.splitext(os.path.basename(args.SAMPLE_FILE))[0]
+        OUTPUT_DIR = "reads_output_"+str(date.today())
         os.mkdir(OUTPUT_DIR,  mode=0o775)
     else:
         OUTPUT_DIR = args.output_dir
+        if not os.path.isdir(OUTPUT_DIR):
+            os.mkdir(OUTPUT_DIR,  mode=0o775)
 
     if args.merge == True:
         merge_pairs(args.SAMPLE_FILE, OUTPUT_DIR, args.pear_merger, args.threads)
